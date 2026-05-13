@@ -160,3 +160,12 @@
 .tx-gold { color: #FBBF24; }
 .tx-purple { color: #C4B5FD; }
 .tx-muted { color: #94A3B8; }
+
+/* Toggle */
+.toggle-btn {
+  padding: 8px 18px; border: none; border-radius: 999px;
+  background: rgba(239, 68, 68, 0.15); color: #EF4444;
+  font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 11px;
+  letter-spacing: 0.08em; cursor: pointer; transition: all 0.18s;
+}
+.toggle-btn.on { background: rgba(16, 185, 129, 0.15); color: #10B981; }

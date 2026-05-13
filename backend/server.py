@@ -93,10 +93,12 @@ def _initial_state() -> dict[str, Any]:
              "timestamp": datetime.now(timezone.utc).isoformat()},
         ],
         "limits": {"auto_approve_under": 5, "max_per_trade": 25, "max_per_week": 50,
-                   "sell_approval": "always", "age_unlock": 13},
+                   "sell_approval": "always", "age_unlock": 13,
+                   "wishes_enabled": True, "max_wish_stake": 10},
         "quests": [q.copy() for q in DEFAULT_QUESTS],
         "prizes": [p.copy() for p in DEFAULT_PRIZES],
         "redeemed": [],
+        "wishes": [],   # active + recently-resolved Wish & Grow trades
     }
 
 
@@ -210,6 +212,7 @@ async def price_ticker_loop():
 async def on_startup():
     await get_state()
     asyncio.create_task(price_ticker_loop())
+    asyncio.create_task(wish_resolver_loop())
     logger.info("StockQuest backend started")
 
 
@@ -231,6 +234,15 @@ class LimitsReq(BaseModel):
     max_per_week: float
     sell_approval: str
     age_unlock: int
+    wishes_enabled: bool = True
+    max_wish_stake: int = 10
+
+
+class WishReq(BaseModel):
+    ticker: str
+    direction: str  # "grow" (up) or "shrink" (down)
+    stake: int = Field(gt=0, le=20)
+    duration_sec: int = Field(default=30, ge=10, le=120)
 
 
 class AIStoryReq(BaseModel):
@@ -414,6 +426,115 @@ async def quest_complete(quest_id: str):
     await broadcast_state(state, event="quest_done",
                           extra={"icon": q.get("icon", "⭐"), "xp": q["xp"]})
     return _enrich(state)
+
+
+@api.post("/wish")
+async def make_wish(req: WishReq):
+    """Wish & Grow — kid-friendly options. Predict GROW (up) or SHRINK (down) for a stock."""
+    if req.ticker not in CANDY_BY_TICKER:
+        raise HTTPException(400, "Unknown ticker")
+    if req.direction not in ("grow", "shrink"):
+        raise HTTPException(400, "Direction must be 'grow' or 'shrink'")
+    state = await get_state()
+    if not state["limits"].get("wishes_enabled", True):
+        raise HTTPException(403, "Wish & Grow disabled by parent")
+    max_stake = state["limits"].get("max_wish_stake", 10)
+    if req.stake > max_stake:
+        raise HTTPException(400, f"Stake exceeds parent's max ({max_stake} coins)")
+    if state["coins"] < req.stake:
+        raise HTTPException(400, "Not enough candy coins")
+
+    candy = CANDY_BY_TICKER[req.ticker]
+    start_price = state["prices"][req.ticker]
+    now = datetime.now(timezone.utc)
+    wish = {
+        "id": str(uuid.uuid4()),
+        "ticker": req.ticker,
+        "candy_name": candy["candy_name"],
+        "icon": candy["icon"],
+        "direction": req.direction,
+        "stake": req.stake,
+        "start_price": start_price,
+        "duration_sec": req.duration_sec,
+        "created_at": now.isoformat(),
+        "expires_at": (now.timestamp() + req.duration_sec),
+        "status": "active",  # active | won | lost
+        "end_price": None,
+        "payout": 0,
+    }
+    state["coins"] -= req.stake
+    state["wishes"].insert(0, wish)
+    state["history"].insert(0, {
+        "id": str(uuid.uuid4()), "type": "wish", "icon": "🌱" if req.direction == "grow" else "🍃",
+        "title": f"Wish placed: {candy['icon']} {candy['candy_name']} → {req.direction.upper()}",
+        "detail": f"Staked 🍬{req.stake} · {req.duration_sec}s wish",
+        "amount_str": f"-🍬{req.stake}", "color": "purple",
+        "timestamp": now.isoformat(),
+    })
+    await save_state(state)
+    await broadcast_state(state, event="wish_placed",
+                          extra={"wish_id": wish["id"], "ticker": req.ticker,
+                                 "direction": req.direction, "icon": candy["icon"]})
+    return {"status": "active", "wish": wish, "state": _enrich(state)}
+
+
+async def wish_resolver_loop():
+    """Every 1s, resolve any active wishes whose timer expired."""
+    await asyncio.sleep(3)
+    while True:
+        try:
+            state = await get_state()
+            now_ts = datetime.now(timezone.utc).timestamp()
+            changed = False
+            for w in state.get("wishes", []):
+                if w["status"] != "active":
+                    continue
+                if now_ts < w["expires_at"]:
+                    continue
+                # Resolve
+                end_price = state["prices"].get(w["ticker"], w["start_price"])
+                grew = end_price > w["start_price"]
+                won = (w["direction"] == "grow" and grew) or (w["direction"] == "shrink" and not grew)
+                w["end_price"] = end_price
+                w["status"] = "won" if won else "lost"
+                if won:
+                    payout = w["stake"] * 2
+                    w["payout"] = payout
+                    state["coins"] += payout
+                    state["xp"] += 50
+                    state["history"].insert(0, {
+                        "id": str(uuid.uuid4()), "type": "wish_won", "icon": "🦄",
+                        "title": f"🦄 Wish came true! {w['icon']} {w['candy_name']}",
+                        "detail": f"Won 🍬{payout} (2x stake) +50 XP",
+                        "amount_str": f"+🍬{payout}", "color": "green",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
+                else:
+                    state["xp"] = max(0, state["xp"] - 10)
+                    state["history"].insert(0, {
+                        "id": str(uuid.uuid4()), "type": "wish_lost", "icon": "💧",
+                        "title": f"💧 Wish didn't come true: {w['icon']} {w['candy_name']}",
+                        "detail": f"Lost 🍬{w['stake']} · -10 XP. Try again!",
+                        "amount_str": f"-🍬{w['stake']}", "color": "muted",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
+                changed = True
+                await sio.emit("wish_resolved", {
+                    "wish_id": w["id"], "ticker": w["ticker"], "icon": w["icon"],
+                    "candy_name": w["candy_name"], "direction": w["direction"],
+                    "won": won, "payout": w["payout"], "stake": w["stake"],
+                    "start_price": w["start_price"], "end_price": end_price,
+                }, room=SESSION_ID)
+            # Trim resolved wishes older than 10 (keep last 10 for history)
+            active = [w for w in state["wishes"] if w["status"] == "active"]
+            resolved = [w for w in state["wishes"] if w["status"] != "active"][:10]
+            state["wishes"] = active + resolved
+            if changed:
+                await save_state(state)
+                await broadcast_state(state)
+        except Exception as e:
+            logger.exception(f"wish resolver error: {e}")
+        await asyncio.sleep(1)
 
 
 @api.post("/limits")

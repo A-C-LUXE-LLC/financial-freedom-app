@@ -89,6 +89,23 @@ function App() {
       if (ex) showToast(`${ex.icon} +${ex.xp} XP earned!`);
     });
 
+    s.on("wish_placed", (data) => {
+      setState(data);
+      const ex = data._event_extra;
+      if (ex) showToast(`${ex.icon} Wish placed! ${ex.direction === 'grow' ? '🌱 GROW' : '🍃 SHRINK'}`);
+    });
+
+    s.on("wish_resolved", (data) => {
+      if (data.won) {
+        setCelebration({ icon: "🦄", ticker: data.ticker });
+        setTimeout(() => setCelebration(null), 3000);
+        showToast(`🦄 Wish came true! +🍬${data.payout}`);
+        fetchStory(data.ticker);
+      } else {
+        showToast(`💧 Try again! ${data.icon} didn't ${data.direction}`);
+      }
+    });
+
     // initial fetch (in case socket is slow)
     axios.get(`${API}/state`).then((r) => setState(r.data)).catch(() => {});
 
@@ -118,6 +135,8 @@ function App() {
     setLimits: (limits) => axios.post(`${API}/limits`, limits),
     reset: () => axios.post(`${API}/reset`),
     refreshQuests: () => axios.post(`${API}/ai/quests`),
+    wish: (ticker, direction, stake, duration_sec = 30) =>
+      axios.post(`${API}/wish`, { ticker, direction, stake, duration_sec }),
   }), []);
 
   if (!state) {

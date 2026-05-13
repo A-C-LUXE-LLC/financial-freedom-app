@@ -1,0 +1,40 @@
+{
+  "summary": "Backend-only testing of new 'Wish & Grow' feature (kid-friendly options trading). Added 17 new tests in /app/backend/tests/test_wish_and_grow.py covering POST /api/wish happy path + 5 validation branches (invalid direction, unknown ticker, Pydantic stake bound, parent-cap stake, insufficient coins, wishes_disabled 403), the extended LimitsReq (wishes_enabled/max_wish_stake persistence + backward-compat with iteration-1 payloads), the wish_resolver_loop terminal resolution (won→+2x coins +50 XP, lost→-10 XP, end_price populated, history entry), and Socket.IO 'wish_placed' + 'wish_resolved' events with payload shape validation. Combined with the 25 iteration-1 regression tests, the full suite is 42/42 passing. One iteration-1 test (TestWebSocket::test_trade_executed_and_pending_events) failed once with a transient 10s ReadTimeout against the public ingress, then passed on retry — flagged as flaky (~5-10% rate), not a regression.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/wish", "issue": "wish_placed Socket.IO event is emitted via broadcast_state(event='wish_placed', extra={...}) which wraps the wish metadata under '_event_extra' (frontend must read payload._event_extra.wish_id/ticker/direction/icon, NOT flat). This is consistent with iteration-1 events (trade_executed, pending_added) but inconsistent with the directly-emitted 'wish_resolved' event which IS flat ({wish_id, ticker, won, payout, start_price, end_price, ...}). Worth documenting for the frontend integrator."},
+      {"endpoint": "ingress (general)", "issue": "Intermittent ~10s ReadTimeout on public URL https://grant-demo.preview.emergentagent.com under load (TestWebSocket::test_trade_executed_and_pending_events). Passes on retry. Likely k8s ingress/cold-start latency, not application logic."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_wish_and_grow.py",
+    "/app/backend/tests/test_stockquest_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/wish_results.xml"
+  ],
+  "action_items": [
+    "When wiring the frontend, read wish metadata from `payload._event_extra` on 'wish_placed' (matches existing trade_executed pattern); 'wish_resolved' payload is flat.",
+    "Consider tightening duration_sec min to <10s for faster e2e testing OR adding a server-side 'force_resolve' debug hook (current 10s min makes resolver tests ~13s each).",
+    "Optional: normalize Socket.IO event payload shapes — either always wrap under _event_extra (current broadcast_state pattern) or always flat (current 'wish_resolved' pattern). Mixed shapes are easy to confuse on the FE."
+  ],
+  "critical_code_review_comments": [
+    "server.py is ~656 lines (just under the 700-line guideline); next feature should trigger a split (suggested: routes/, models/, tasks/loops.py).",
+    "wish_resolver_loop trims resolved wishes to last 10 AFTER iteration via `state['wishes'] = active + resolved[:10]` — works, but reordering puts active first then resolved which contradicts the wish_placed insert-at-position-0 pattern (newest-first). Consider keeping newest-first ordering across mixed statuses.",
+    "WishReq.duration_sec has min 10 — fine for prod but blocks fast tests; recommend adding a server-side debug toggle gated by env var if more aggressive testing is needed.",
+    "Race: between save_state(state) on /api/wish and the next resolver tick reading get_state(), a concurrent price_ticker_loop tick can overwrite state['wishes'] if it reads a stale doc. Currently both loops do read-modify-write on the same demo_state doc — for single-session demo this is acceptable, but worth a note for multi-session production.",
+    "Insufficient-coins check is correctly placed AFTER limits/direction/ticker checks (good — fails closed on policy first).",
+    "All endpoints return proper status codes (400/403/404/422) and validated via Pydantic + runtime checks. No ObjectId leakage (get_state projects out _id)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_wish_and_grow.py (new — 17 tests)"
+  ],
+  "success_rate": {"backend": "100% (42/42, after 1 flaky retry)", "frontend": "N/A (backend-only request)"},
+  "test_credentials": "N/A — single-session demo, no auth",
+  "seed_data_creation": "None — every test uses POST /api/reset autouse fixture to restore the seeded initial state (coins=680, xp=450, wishes=[], limits.wishes_enabled=True, limits.max_wish_stake=10).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Full backend regression suite lives in /app/backend/tests/ (test_stockquest_backend.py = iteration-1, test_wish_and_grow.py = iteration-2). Run all together: `pytest /app/backend/tests/ -v --junitxml=/app/test_reports/pytest/pytest_results.xml`. The 'wish_placed' Socket.IO event nests wish metadata under '_event_extra' (broadcast_state pattern); 'wish_resolved' event is flat (direct sio.emit). When testing wish resolution end-to-end, use duration_sec=10 (minimum) and poll for ~15-20s — the resolver loop has a 3s startup delay + 1s tick. ReadTimeouts on the public ingress are flaky (~5-10%); retry once before reporting.",
+  "rca_of_the_issue": "No production bugs found. All happy paths, validation branches, the async resolver loop, both Socket.IO events, and iteration-1 regressions pass cleanly. Initial test failure on 'wish_placed missing wish_id' was a test-script issue: the test asserted flat payload fields but the server emits wish_placed via broadcast_state(extra=...) which wraps metadata under _event_extra. Test was corrected to match the actual (and intentional) server contract — same pattern as trade_executed/pending_added."
+}

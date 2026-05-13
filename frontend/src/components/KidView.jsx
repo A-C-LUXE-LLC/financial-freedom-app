@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import Confetti from "react-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import BuyModal from "./BuyModal";
+import WishScreen from "./WishScreen";
 import "./KidView.css";
 
 const NAV = [
   { id: "shop", label: "SHOP", icon: "🏪" },
+  { id: "wish", label: "WISH", icon: "🦄" },
   { id: "chest", label: "CHEST", icon: "💎" },
   { id: "prizes", label: "PRIZES", icon: "🎁" },
   { id: "quests", label: "QUESTS", icon: "⭐" },
@@ -155,6 +157,8 @@ export default function KidView({ state, api, celebration, storyData }) {
               </div>
             </div>
           )}
+
+          {tab === "wish" && <WishScreen state={state} api={api} />}
 
           {tab === "chest" && (
             <div className="kv-scr">

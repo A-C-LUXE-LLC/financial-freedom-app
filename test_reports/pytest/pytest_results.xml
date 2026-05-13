@@ -1,1 +1,72 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="25" time="25.885" timestamp="2026-05-13T20:07:35.213111+00:00" hostname="agent-env-4a3526a7-f3cd-42bd-85a3-bb35226af436"><testcase classname="backend.tests.test_stockquest_backend.TestState" name="test_state_returns_enriched" time="0.435" /><testcase classname="backend.tests.test_stockquest_backend.TestFund" name="test_fund_increases_coins_and_cash" time="0.282" /><testcase classname="backend.tests.test_stockquest_backend.TestFund" name="test_fund_invalid" time="0.175" /><testcase classname="backend.tests.test_stockquest_backend.TestBuy" name="test_auto_approve_small_buy" time="0.244" /><testcase classname="backend.tests.test_stockquest_backend.TestBuy" name="test_pending_large_buy" time="0.397" /><testcase classname="backend.tests.test_stockquest_backend.TestBuy" name="test_buy_unknown_ticker" time="0.182" /><testcase classname="backend.tests.test_stockquest_backend.TestBuy" name="test_buy_insufficient_coins" time="0.164" /><testcase classname="backend.tests.test_stockquest_backend.TestApproveDeny" name="test_approve_executes_trade" time="0.473" /><testcase classname="backend.tests.test_stockquest_backend.TestApproveDeny" name="test_approve_invalid_tx" time="0.190" /><testcase classname="backend.tests.test_stockquest_backend.TestApproveDeny" name="test_deny_removes_pending" time="0.484" /><testcase classname="backend.tests.test_stockquest_backend.TestApproveDeny" name="test_deny_invalid_tx" time="0.178" /><testcase classname="backend.tests.test_stockquest_backend.TestRedeem" name="test_redeem_success" time="0.184" /><testcase classname="backend.tests.test_stockquest_backend.TestRedeem" name="test_redeem_insufficient_xp" time="0.172" /><testcase classname="backend.tests.test_stockquest_backend.TestRedeem" name="test_redeem_unknown" time="0.169" /><testcase classname="backend.tests.test_stockquest_backend.TestQuests" name="test_quest_complete_adds_xp" time="0.271" /><testcase classname="backend.tests.test_stockquest_backend.TestQuests" name="test_quest_unknown" time="0.175" /><testcase classname="backend.tests.test_stockquest_backend.TestLimits" name="test_set_limits" time="0.169" /><testcase classname="backend.tests.test_stockquest_backend.TestReset" name="test_reset_restores_initial" time="0.242" /><testcase classname="backend.tests.test_stockquest_backend.TestAIStory" name="test_story_response_shape" time="6.035" /><testcase classname="backend.tests.test_stockquest_backend.TestAIStory" name="test_story_unknown_ticker" time="0.175" /><testcase classname="backend.tests.test_stockquest_backend.TestAIQuests" name="test_ai_quests_returns_5" time="6.555" /><testcase classname="backend.tests.test_stockquest_backend.TestWebSocket" name="test_connect_join_room_state_update" time="0.598" /><testcase classname="backend.tests.test_stockquest_backend.TestWebSocket" name="test_price_tick_received" time="1.685" /><testcase classname="backend.tests.test_stockquest_backend.TestWebSocket" name="test_trade_executed_and_pending_events" time="3.451" /><testcase classname="backend.tests.test_stockquest_backend.TestWebSocket" name="test_two_clients_same_room" time="2.560" /></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="42" time="88.070" timestamp="2026-05-13T20:41:07.801902+00:00" hostname="agent-env-4a3526a7-f3cd-42bd-85a3-bb35226af436"><testcase classname="backend.tests.test_stockquest_backend.TestState" name="test_state_returns_enriched" time="0.227" /><testcase classname="backend.tests.test_stockquest_backend.TestFund" name="test_fund_increases_coins_and_cash" time="0.147" /><testcase classname="backend.tests.test_stockquest_backend.TestFund" name="test_fund_invalid" time="0.097" /><testcase classname="backend.tests.test_stockquest_backend.TestBuy" name="test_auto_approve_small_buy" time="0.150" /><testcase classname="backend.tests.test_stockquest_backend.TestBuy" name="test_pending_large_buy" time="11.445" /><testcase classname="backend.tests.test_stockquest_backend.TestBuy" name="test_buy_unknown_ticker" time="0.100" /><testcase classname="backend.tests.test_stockquest_backend.TestBuy" name="test_buy_insufficient_coins" time="0.108" /><testcase classname="backend.tests.test_stockquest_backend.TestApproveDeny" name="test_approve_executes_trade" time="0.260" /><testcase classname="backend.tests.test_stockquest_backend.TestApproveDeny" name="test_approve_invalid_tx" time="8.781" /><testcase classname="backend.tests.test_stockquest_backend.TestApproveDeny" name="test_deny_removes_pending" time="0.266" /><testcase classname="backend.tests.test_stockquest_backend.TestApproveDeny" name="test_deny_invalid_tx" time="0.098" /><testcase classname="backend.tests.test_stockquest_backend.TestRedeem" name="test_redeem_success" time="0.117" /><testcase classname="backend.tests.test_stockquest_backend.TestRedeem" name="test_redeem_insufficient_xp" time="0.102" /><testcase classname="backend.tests.test_stockquest_backend.TestRedeem" name="test_redeem_unknown" time="0.096" /><testcase classname="backend.tests.test_stockquest_backend.TestQuests" name="test_quest_complete_adds_xp" time="0.150" /><testcase classname="backend.tests.test_stockquest_backend.TestQuests" name="test_quest_unknown" time="0.100" /><testcase classname="backend.tests.test_stockquest_backend.TestLimits" name="test_set_limits" time="0.099" /><testcase classname="backend.tests.test_stockquest_backend.TestReset" name="test_reset_restores_initial" time="0.147" /><testcase classname="backend.tests.test_stockquest_backend.TestAIStory" name="test_story_response_shape" time="3.521" /><testcase classname="backend.tests.test_stockquest_backend.TestAIStory" name="test_story_unknown_ticker" time="0.096" /><testcase classname="backend.tests.test_stockquest_backend.TestAIQuests" name="test_ai_quests_returns_5" time="6.091" /><testcase classname="backend.tests.test_stockquest_backend.TestWebSocket" name="test_connect_join_room_state_update" time="0.486" /><testcase classname="backend.tests.test_stockquest_backend.TestWebSocket" name="test_price_tick_received" time="1.656" /><testcase classname="backend.tests.test_stockquest_backend.TestWebSocket" name="test_trade_executed_and_pending_events" time="11.641"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='grant-demo.preview.emergentagent.com', port=443): Read timed out. (read timeout=10)">/root/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py:534: in _make_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/urllib3/connection.py:571: in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/http/client.py:1415: in getresponse
+    response.begin()
+/usr/local/lib/python3.11/http/client.py:330: in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/http/client.py:291: in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/socket.py:718: in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/ssl.py:1314: in recv_into
+    return self.read(nbytes, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/ssl.py:1166: in read
+    return self._sslobj.read(len, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+/root/.venv/lib/python3.11/site-packages/requests/adapters.py:645: in send
+    resp = conn.urlopen(
+/root/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py:842: in urlopen
+    retries = retries.increment(
+/root/.venv/lib/python3.11/site-packages/urllib3/util/retry.py:498: in increment
+    raise reraise(type(error), error, _stacktrace)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/urllib3/util/util.py:39: in reraise
+    raise value
+/root/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py:788: in urlopen
+    response = self._make_request(
+/root/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py:536: in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+/root/.venv/lib/python3.11/site-packages/urllib3/connectionpool.py:367: in _raise_timeout
+    raise ReadTimeoutError(
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='grant-demo.preview.emergentagent.com', port=443): Read timed out. (read timeout=10)
+
+During handling of the above exception, another exception occurred:
+backend/tests/test_stockquest_backend.py:380: in test_trade_executed_and_pending_events
+    asyncio.run(_t())
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend/tests/test_stockquest_backend.py:358: in _t
+    requests.post(f"{API}/fund", json={"amount_usd": 20}, timeout=10)
+/root/.venv/lib/python3.11/site-packages/requests/api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:592: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/sessions.py:706: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/adapters.py:691: in send
+    raise ReadTimeout(e, request=request)
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='grant-demo.preview.emergentagent.com', port=443): Read timed out. (read timeout=10)</failure></testcase><testcase classname="backend.tests.test_stockquest_backend.TestWebSocket" name="test_two_clients_same_room" time="2.484" /><testcase classname="backend.tests.test_wish_and_grow.TestResetIncludesWishDefaults" name="test_reset_has_wishes_list_and_wish_limits" time="0.221" /><testcase classname="backend.tests.test_wish_and_grow.TestWishCreation" name="test_create_wish_deducts_coins_and_adds_active" time="0.217" /><testcase classname="backend.tests.test_wish_and_grow.TestWishCreation" name="test_wish_direction_shrink_ok" time="0.164" /><testcase classname="backend.tests.test_wish_and_grow.TestWishValidation" name="test_invalid_direction_returns_400" time="0.140" /><testcase classname="backend.tests.test_wish_and_grow.TestWishValidation" name="test_unknown_ticker_returns_400" time="0.137" /><testcase classname="backend.tests.test_wish_and_grow.TestWishValidation" name="test_stake_above_pydantic_bound_returns_422" time="0.139" /><testcase classname="backend.tests.test_wish_and_grow.TestWishValidation" name="test_stake_above_parent_max_returns_400" time="0.147" /><testcase classname="backend.tests.test_wish_and_grow.TestWishValidation" name="test_insufficient_coins_returns_400" time="3.109" /><testcase classname="backend.tests.test_wish_and_grow.TestWishValidation" name="test_wishes_disabled_returns_403" time="0.219" /><testcase classname="backend.tests.test_wish_and_grow.TestLimitsExtended" name="test_set_wish_fields_persist" time="0.225" /><testcase classname="backend.tests.test_wish_and_grow.TestLimitsExtended" name="test_existing_limits_payload_still_works" time="0.168" /><testcase classname="backend.tests.test_wish_and_grow.TestWishResolver" name="test_short_wish_resolves_to_won_or_lost" time="11.172" /><testcase classname="backend.tests.test_wish_and_grow.TestWishSocketEvents" name="test_wish_placed_and_resolved_events" time="12.633" /><testcase classname="backend.tests.test_wish_and_grow.TestRegressionExistingFlows" name="test_state_still_enriched_with_wish_fields" time="0.161" /><testcase classname="backend.tests.test_wish_and_grow.TestRegressionExistingFlows" name="test_fund_still_works" time="0.219" /><testcase classname="backend.tests.test_wish_and_grow.TestRegressionExistingFlows" name="test_buy_request_auto_approve_still_works" time="0.146" /><testcase classname="backend.tests.test_wish_and_grow.TestRegressionExistingFlows" name="test_pending_approve_deny_still_work" time="9.971" /></testsuite></testsuites>

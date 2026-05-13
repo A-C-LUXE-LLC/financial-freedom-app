@@ -222,13 +222,32 @@ export default function ParentDashboard({ state, api }) {
                   <option value="kid">Lily decides</option>
                 </select>
               </LimitRow>
-              <LimitRow label="Age unlock" desc="Full trading control at this age" last>
+              <LimitRow label="Age unlock" desc="Full trading control at this age">
                 <select data-testid="limit-age-unlock" value={limits.age_unlock}
                   onChange={(e) => setLimits({ ...limits, age_unlock: +e.target.value })}>
                   <option value={13}>Age 13</option>
                   <option value={16}>Age 16</option>
                   <option value={18}>Age 18</option>
                 </select>
+              </LimitRow>
+              <LimitRow label="Wish & Grow enabled" desc="Lets kid try options-style direction bets (1-10 coin stakes)">
+                <button
+                  data-testid="limit-wishes-toggle"
+                  className={`toggle-btn ${limits.wishes_enabled ? "on" : ""}`}
+                  onClick={() => setLimits({ ...limits, wishes_enabled: !limits.wishes_enabled })}
+                >
+                  {limits.wishes_enabled ? "ON" : "OFF"}
+                </button>
+              </LimitRow>
+              <LimitRow label="Max coins per wish" desc="Cap on a single Wish & Grow stake" last>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  data-testid="limit-max-wish-stake"
+                  value={limits.max_wish_stake ?? 10}
+                  onChange={(e) => setLimits({ ...limits, max_wish_stake: +e.target.value })}
+                />
               </LimitRow>
               <button data-testid="save-limits-btn" className="btn-green" onClick={() => api.setLimits(limits)}>💾 Save Limits</button>
             </div>
