@@ -41,6 +41,14 @@ Build a demo for a $10,000 grant funding pitch — a kid-friendly stock investin
 - New 🦄 WISH tab in kid bottom nav
 - 42/42 backend tests passed (iteration_2.json)
 
+### 2026-01-13 — Real Prices + Walkthrough + Pitch Deck
+- **Finnhub real prices** every 60s for AAPL/GOOGL/TSLA/DIS/MCD/NFLX. Live prices now flow through the entire app (candy coin prices, portfolio value, wish resolutions).
+- **▶ Play Demo button** — auto-plays a 62-second narrated walkthrough: funds wallet, kid buys candy, places wish, parent approves, end summary. Toast captions + progress bar overlay. Toggleable in topbar.
+- **📥 Pitch PDF button** — GET /api/pitch-deck downloads a 1-page PDF: header, 4 stat cards (portfolio/coins/XP/wishes-won), AI-narrated "Lily's Story" via Claude Sonnet 4.5, matplotlib holdings chart, recent activity. Built with reportlab.
+- **Sound effects** — win chime + wish chime via Web Audio (no audio files). 🔊/🔇 mute toggle in topbar.
+- 4-year-old copy polish: "Wish Big!" CTA, shorter labels, larger tap targets.
+- 11/11 new backend tests passed (iteration_3.json)
+
 ## What's Implemented (Static / Done)
 - Dual-persona split-screen demo with view toggle ✅
 - Real-time WebSocket sync (price_tick, state_update, trade_executed, pending_added, trade_approved, trade_denied, prize_redeemed, quest_done, wish_placed, wish_resolved) ✅
