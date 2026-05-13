@@ -3,22 +3,30 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import ParentDashboard from "./components/ParentDashboard";
 import KidView from "./components/KidView";
+import Walkthrough from "./components/Walkthrough";
+import { playWinChime, playWishChime, setMuted as setSoundMuted } from "./lib/sound";
 import "./App.css";
+import "./components/Walkthrough.css";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const SOCKET_PATH = "/api/socket.io";
 
 function App() {
-  const [view, setView] = useState("split"); // 'parent' | 'split' | 'kid'
+  const [view, setView] = useState("split");
   const [state, setState] = useState(null);
   const [connected, setConnected] = useState(false);
   const [toast, setToast] = useState(null);
-  const [celebration, setCelebration] = useState(null); // {icon, ticker}
-  const [storyData, setStoryData] = useState(null); // {story, icon, candy_name}
+  const [celebration, setCelebration] = useState(null);
+  const [storyData, setStoryData] = useState(null);
+  const [walkthrough, setWalkthrough] = useState(false);
+  const [muted, setMuted] = useState(false);
   const socketRef = useRef(null);
+  const stateRef = useRef(null);
 
-  // Toast helper
+  useEffect(() => { stateRef.current = state; }, [state]);
+  useEffect(() => { setSoundMuted(muted); }, [muted]);
+
   const showToast = useCallback((msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2400);
@@ -50,6 +58,7 @@ function App() {
         setCelebration({ icon: ex.icon, ticker: ex.ticker });
         setTimeout(() => setCelebration(null), 2400);
         showToast(`${ex.icon} +20 XP! Auto-approved`);
+        playWinChime();
         fetchStory(ex.ticker);
       }
     });
@@ -67,6 +76,7 @@ function App() {
         setCelebration({ icon: ex.icon, ticker: ex.ticker });
         setTimeout(() => setCelebration(null), 2400);
         showToast(`${ex.icon} Approved! +20 XP`);
+        playWinChime();
         fetchStory(ex.ticker);
       }
     });
@@ -92,7 +102,10 @@ function App() {
     s.on("wish_placed", (data) => {
       setState(data);
       const ex = data._event_extra;
-      if (ex) showToast(`${ex.icon} Wish placed! ${ex.direction === 'grow' ? '🌱 GROW' : '🍃 SHRINK'}`);
+      if (ex) {
+        showToast(`${ex.icon} Wish placed! ${ex.direction === 'grow' ? '🌱 GROW' : '🍃 SHRINK'}`);
+        playWishChime();
+      }
     });
 
     s.on("wish_resolved", (data) => {
@@ -100,6 +113,7 @@ function App() {
         setCelebration({ icon: "🦄", ticker: data.ticker });
         setTimeout(() => setCelebration(null), 3000);
         showToast(`🦄 Wish came true! +🍬${data.payout}`);
+        playWinChime();
         fetchStory(data.ticker);
       } else {
         showToast(`💧 Try again! ${data.icon} didn't ${data.direction}`);
@@ -165,6 +179,29 @@ function App() {
           <button data-testid="view-kid-btn" className={`vt-btn ${view==='kid'?'on':''}`} onClick={() => setView('kid')}>Kid</button>
         </div>
         <div className="conn">
+          <button
+            data-testid="walkthrough-play-btn"
+            className="wt-play-btn"
+            onClick={() => setWalkthrough(true)}
+            title="Auto-play 60s demo tour"
+          >
+            ▶ Play Demo
+          </button>
+          <a
+            data-testid="export-pitch-btn"
+            className="wt-export-btn"
+            href={`${API}/pitch-deck`}
+            download
+            title="Download Lily's pitch deck PDF"
+          >
+            📥 Pitch PDF
+          </a>
+          <button
+            data-testid="mute-btn"
+            className="wt-mute-btn"
+            onClick={() => setMuted(!muted)}
+            title={muted ? "Unmute" : "Mute"}
+          >{muted ? "🔇" : "🔊"}</button>
           <span className={`dot ${connected?'on':'off'}`} />
           <span className="conn-label">{connected ? 'LIVE' : 'OFFLINE'}</span>
           <button data-testid="reset-demo-btn" className="reset-btn" onClick={() => api.reset()}>↻ Reset</button>
@@ -187,6 +224,16 @@ function App() {
 
       {/* Toast */}
       {toast && <div className="toast" data-testid="toast">{toast}</div>}
+
+      {/* Walkthrough overlay */}
+      {walkthrough && (
+        <Walkthrough
+          onStop={() => setWalkthrough(false)}
+          setView={setView}
+          api={api}
+          state={stateRef.current}
+        />
+      )}
     </div>
   );
 }

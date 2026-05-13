@@ -105,7 +105,7 @@ export default function WishScreen({ state, api }) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div className="ws-stake-lbl">How many 🍬 to wish?</div>
+              <div className="ws-stake-lbl">How many 🍬?</div>
               <div className="ws-stake-row">
                 <button
                   data-testid="wish-stake-minus"
@@ -133,7 +133,7 @@ export default function WishScreen({ state, api }) {
                 disabled={state.coins < stake}
                 onClick={submit}
               >
-                ✨ Make Wish! ✨
+                ✨ Wish Big! ✨
               </button>
             </motion.div>
           )}

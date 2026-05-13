@@ -25,6 +25,7 @@ mongo_url = os.environ["MONGO_URL"]
 mongo_client = AsyncIOMotorClient(mongo_url)
 db = mongo_client[os.environ["DB_NAME"]]
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY", "")
 
 SESSION_ID = "demo_session"
 
@@ -213,7 +214,48 @@ async def on_startup():
     await get_state()
     asyncio.create_task(price_ticker_loop())
     asyncio.create_task(wish_resolver_loop())
+    asyncio.create_task(finnhub_fetch_loop())
     logger.info("StockQuest backend started")
+
+
+async def finnhub_fetch_loop():
+    """Every 60 seconds, refresh base prices from Finnhub (real stock prices)."""
+    import httpx
+    if not FINNHUB_API_KEY:
+        logger.warning("FINNHUB_API_KEY missing — skipping real price fetch")
+        return
+    await asyncio.sleep(5)  # let app fully start
+    while True:
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                state = await get_state()
+                fetched = {}
+                for c in CANDIES:
+                    try:
+                        r = await client.get(
+                            "https://finnhub.io/api/v1/quote",
+                            params={"symbol": c["ticker"], "token": FINNHUB_API_KEY},
+                        )
+                        if r.status_code == 200:
+                            data = r.json()
+                            cur = data.get("c")  # current price
+                            if cur and cur > 0:
+                                fetched[c["ticker"]] = round(float(cur), 2)
+                                # also update base_price so jitter mean-reverts to real
+                                c["base_price"] = float(cur)
+                    except Exception as e:
+                        logger.warning(f"Finnhub fetch {c['ticker']}: {e}")
+                if fetched:
+                    state["prev_prices"] = state["prices"].copy()
+                    state["prices"].update(fetched)
+                    state["last_real_fetch"] = datetime.now(timezone.utc).isoformat()
+                    await save_state(state)
+                    await broadcast_state(state, event="real_prices_synced",
+                                          extra={"toast": f"📡 Live prices synced ({len(fetched)} stocks)"})
+                    logger.info(f"Finnhub sync: {fetched}")
+        except Exception as e:
+            logger.exception(f"finnhub fetch loop: {e}")
+        await asyncio.sleep(60)
 
 
 api = APIRouter(prefix="/api")
@@ -635,6 +677,182 @@ async def ai_quests():
 
 
 fastapi_app.include_router(api)
+
+
+# ───────────────────────── Pitch Deck PDF ─────────────────────────
+@fastapi_app.get("/api/pitch-deck")
+async def pitch_deck():
+    """Generate a 1-page PDF pitch deck of Lily's investing journey."""
+    import io
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import inch
+    from reportlab.lib.colors import HexColor
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.utils import ImageReader
+    from fastapi.responses import StreamingResponse
+
+    state = await get_state()
+    portfolio_val = _portfolio_value(state)
+    total_xp = state["xp"]
+    total_coins = state["coins"]
+    wishes = state.get("wishes", [])
+    wishes_won = sum(1 for w in wishes if w["status"] == "won")
+    wishes_lost = sum(1 for w in wishes if w["status"] == "lost")
+    buy_history = [h for h in state["history"] if h["type"] == "buy"]
+    biggest_buy = max(buy_history, key=lambda h: 1, default=None)
+
+    # AI narrative
+    narrative = ""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        sysmsg = ("You write a 2-sentence, parent-friendly journey summary for a kid investor's "
+                  "pitch deck. Be specific with numbers, warm, professional. No emojis. Max 50 words.")
+        usr = (f"Kid name: Lily, age 6. Portfolio value: ${portfolio_val:.2f}. XP earned: {total_xp}. "
+               f"Candy coins held: {total_coins}. Wishes won: {wishes_won}/{wishes_won+wishes_lost}. "
+               f"Stocks owned: {list(state['holdings'].keys())}. Write the narrative.")
+        chat = (LlmChat(api_key=EMERGENT_LLM_KEY, session_id=f"pitch-{uuid.uuid4()}",
+                        system_message=sysmsg)
+                .with_model("anthropic", "claude-sonnet-4-5-20250929"))
+        narrative = str(await chat.send_message(UserMessage(text=usr))).strip()
+    except Exception as e:
+        logger.exception(f"pitch ai fail: {e}")
+        narrative = (f"Lily, age 6, has built a ${portfolio_val:.2f} portfolio across "
+                     f"{len(state['holdings'])} real fractional shares, earned {total_xp} XP, "
+                     f"and made {wishes_won} winning predictions while learning to invest through play.")
+
+    # Build holdings chart (bar)
+    chart_buf = io.BytesIO()
+    if state["holdings"]:
+        fig, ax = plt.subplots(figsize=(6, 2.2), dpi=120)
+        tickers = list(state["holdings"].keys())
+        values = [state["holdings"][t]["shares"] * state["prices"][t] for t in tickers]
+        colors = ["#EC4899", "#8B5CF6", "#10B981", "#0EA5E9", "#B45309", "#EF4444"][: len(tickers)]
+        bars = ax.bar(tickers, values, color=colors)
+        ax.set_facecolor("#0B0F19")
+        fig.patch.set_facecolor("#0B0F19")
+        ax.tick_params(colors="#94A3B8")
+        for spine in ax.spines.values():
+            spine.set_color("#1F2937")
+        ax.set_title("Holdings by value ($)", color="#FFFFFF", fontsize=11, pad=8)
+        for b, v in zip(bars, values):
+            ax.text(b.get_x() + b.get_width() / 2, v, f"${v:.0f}",
+                    ha="center", va="bottom", color="#FFFFFF", fontsize=8)
+        plt.tight_layout()
+        plt.savefig(chart_buf, format="png", facecolor="#0B0F19")
+        plt.close(fig)
+        chart_buf.seek(0)
+
+    # Build the PDF
+    pdf_buf = io.BytesIO()
+    c = canvas.Canvas(pdf_buf, pagesize=letter)
+    W, H = letter
+    bg = HexColor("#0B0F19")
+    cyan = HexColor("#06B6D4")
+    gold = HexColor("#FBBF24")
+    green = HexColor("#10B981")
+    purple = HexColor("#C4B5FD")
+    white = HexColor("#FFFFFF")
+    muted = HexColor("#94A3B8")
+
+    # Dark background
+    c.setFillColor(bg)
+    c.rect(0, 0, W, H, fill=1, stroke=0)
+
+    # Header
+    c.setFillColor(cyan)
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(0.6 * inch, H - 0.55 * inch, "STOCKQUEST · CANDY KINGDOM · INVESTOR PITCH")
+    c.setFillColor(white)
+    c.setFont("Helvetica-Bold", 22)
+    c.drawString(0.6 * inch, H - 0.85 * inch, "Lily's Investing Journey")
+    c.setFillColor(muted)
+    c.setFont("Helvetica", 10)
+    c.drawString(0.6 * inch, H - 1.05 * inch,
+                 f"Custodial Account · UTMA · Generated {datetime.now(timezone.utc).strftime('%B %d, %Y')}")
+
+    # Stats row
+    stats = [
+        ("Portfolio Value", f"${portfolio_val:.2f}", green),
+        ("Candy Coins", f"{total_coins}", gold),
+        ("XP Earned", f"{total_xp}", purple),
+        ("Wishes Won", f"{wishes_won}/{wishes_won + wishes_lost or 1}", cyan),
+    ]
+    x = 0.6 * inch
+    y = H - 1.95 * inch
+    box_w = (W - 1.2 * inch) / 4 - 0.1 * inch
+    for label, val, color in stats:
+        c.setStrokeColor(HexColor("#1F2937"))
+        c.setFillColor(HexColor("#11192B"))
+        c.roundRect(x, y, box_w, 0.85 * inch, 8, fill=1, stroke=1)
+        c.setFillColor(muted)
+        c.setFont("Helvetica", 8)
+        c.drawString(x + 0.15 * inch, y + 0.62 * inch, label.upper())
+        c.setFillColor(color)
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(x + 0.15 * inch, y + 0.22 * inch, val)
+        x += box_w + 0.12 * inch
+
+    # AI Narrative box
+    ny = y - 1.2 * inch
+    c.setFillColor(HexColor("#0F1A2E"))
+    c.setStrokeColor(cyan)
+    c.roundRect(0.6 * inch, ny, W - 1.2 * inch, 1.0 * inch, 8, fill=1, stroke=1)
+    c.setFillColor(cyan)
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(0.75 * inch, ny + 0.78 * inch, "✦ LILY'S STORY (AI-NARRATED)")
+    c.setFillColor(white)
+    c.setFont("Helvetica", 10)
+    # wrap narrative
+    from textwrap import wrap
+    lines = wrap(narrative, width=110)[:3]
+    for i, line in enumerate(lines):
+        c.drawString(0.75 * inch, ny + 0.55 * inch - i * 0.18 * inch, line)
+
+    # Chart
+    if chart_buf.getbuffer().nbytes > 0:
+        chart_buf.seek(0)
+        cy = ny - 2.6 * inch
+        c.drawImage(ImageReader(chart_buf), 0.6 * inch, cy,
+                    width=W - 1.2 * inch, height=2.3 * inch,
+                    preserveAspectRatio=True, mask='auto')
+
+    # Recent activity (last 5)
+    ay = 1.6 * inch
+    c.setFillColor(cyan)
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(0.6 * inch, ay + 0.6 * inch, "RECENT ACTIVITY")
+    c.setFillColor(white)
+    c.setFont("Helvetica", 9)
+    for i, h in enumerate(state["history"][:4]):
+        c.setFillColor(white)
+        c.drawString(0.6 * inch, ay + 0.4 * inch - i * 0.16 * inch,
+                     f"{h['icon']}  {h['title'][:75]}")
+        c.setFillColor(muted)
+        c.setFont("Helvetica", 7)
+        c.drawString(W - 1.4 * inch, ay + 0.4 * inch - i * 0.16 * inch,
+                     h.get("amount_str", ""))
+        c.setFont("Helvetica", 9)
+
+    # Footer
+    c.setFillColor(muted)
+    c.setFont("Helvetica", 7)
+    c.drawString(0.6 * inch, 0.4 * inch,
+                 "Powered by StockQuest · Real fractional shares via UTMA custodial brokerage · "
+                 "Parent-controlled limits and approvals")
+    c.setFont("Helvetica-Bold", 7)
+    c.setFillColor(gold)
+    c.drawRightString(W - 0.6 * inch, 0.4 * inch, "stockquest.app")
+
+    c.showPage()
+    c.save()
+    pdf_buf.seek(0)
+    fname = f"lily-pitch-deck-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M')}.pdf"
+    return StreamingResponse(pdf_buf, media_type="application/pdf",
+                             headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
 
 fastapi_app.add_middleware(
     CORSMiddleware,
