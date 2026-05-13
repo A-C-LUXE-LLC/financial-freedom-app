@@ -1,0 +1,100 @@
+{
+  "theme_archetype": {
+    "parent_view": "Archetype 5 (Jewel & Luxury) + Archetype 4 (Swiss & High-Contrast) - Dark Theme. Rationale: Must feel like a trusted, professional, high-end wealth management tool to convince parents and investors.",
+    "child_view": "Archetype 6 (Vibrant Play) - Light Theme. Rationale: Must feel like a top-tier dopamine-rich mobile puzzle game (e.g., Toon Blast, Royal Match) to keep kids engaged."
+  },
+  "typography": {
+    "parent_view": {
+      "headings": "Cabinet Grotesk",
+      "body": "Manrope",
+      "data_numbers": "JetBrains Mono",
+      "rules": "Use tracking-tight on headings, tabular-nums for financial data. Keep scales moderate and dense."
+    },
+    "child_view": {
+      "headings": "Fredoka",
+      "body": "Nunito",
+      "rules": "Use heavy weights (font-black, font-bold), playful bounce, high readability, and large text scales."
+    },
+    "banned_fonts": ["Inter", "Roboto", "Open Sans", "Space Grotesk"]
+  },
+  "colors": {
+    "parent_palette": {
+      "background": "#0B0F19",
+      "surface": "#1A2235",
+      "surface_glass": "rgba(255, 255, 255, 0.03)",
+      "border": "rgba(255, 255, 255, 0.1)",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#94A3B8",
+      "accent_up": "#10B981",
+      "accent_down": "#EF4444",
+      "brand_primary": "#06B6D4"
+    },
+    "child_palette": {
+      "background": "#FDF2F8",
+      "surface": "#FFFFFF",
+      "text_primary": "#1E293B",
+      "text_secondary": "#64748B",
+      "candy_gold": "#FBBF24",
+      "xp_magic": "#0EA5E9",
+      "action_primary": "#F43F5E",
+      "action_shadow": "#BE123C"
+    }
+  },
+  "spacing_layout": {
+    "global_demo_structure": "A split-screen presentation view: Left side (60%) Parent Dashboard Desktop view, Right side (40%) Child View strictly contained inside a mobile phone mockup frame. This enables simultaneous live interaction for the grant pitch.",
+    "parent_dashboard": {
+      "grid": "Control Room Grid (grid-cols-12 with varied spans)",
+      "spacing": "p-6 to p-8, tight inner gaps (gap-4)",
+      "alignment": "Strict geometric alignment, left-aligned data, dense and compact."
+    },
+    "child_app": {
+      "container": "max-w-[375px] h-[800px] mx-auto rounded-[3rem] border-[12px] border-slate-900 overflow-hidden relative bg-pink-50 shadow-2xl",
+      "spacing": "p-4, gap-4",
+      "buttons": "Chunky blocks, full width, massive padding."
+    }
+  },
+  "surfaces_components": {
+    "parent_view": {
+      "cards": "1px solid border-white/10, bg-white/5, backdrop-blur-md, subtle inner shadow.",
+      "charts": "Recharts with neon strokes (Cyan/Emerald) on deep dark backgrounds. Hide grid lines.",
+      "ui_library": "Shadcn heavily customized for dark mode."
+    },
+    "child_view": {
+      "cards": "White background, rounded-3xl, thick shadow-sm (e.g. shadow-[0_4px_12px_rgba(0,0,0,0.05)]).",
+      "buttons": "Tactile gaming buttons: solid bright color, distinct bottom shadow (e.g. shadow-[0_6px_0_#BE123C]), translating down on click (active:translate-y-1 active:shadow-none).",
+      "ui_library": "Custom HTML/Tailwind ONLY. Do NOT use standard Shadcn cards here."
+    }
+  },
+  "motion_interactions": {
+    "parent_view": {
+      "data_ticks": "Flash green/red background slightly on price update. Highlight table rows briefly.",
+      "modals": "Smooth fade-in (Framer Motion)."
+    },
+    "child_view": {
+      "celebrations": "react-confetti on successful trade/quest.",
+      "mascot": "Floating continuous animation (translate-y up and down).",
+      "buttons": "Spring scale on hover/tap."
+    }
+  },
+  "media_urls": {
+    "parent_avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
+    "child_avatar": "https://images.unsplash.com/photo-1618641986557-1de223cb2f4f?auto=format&fit=crop&q=80&w=400",
+    "fintech_bg_texture": "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&q=80&w=2000",
+    "mascot_placeholder": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=400",
+    "candies": {
+      "apple": "https://images.unsplash.com/photo-1550828520-4cb496926fc9?auto=format&fit=crop&q=80&w=400",
+      "tesla": "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&q=80&w=400",
+      "disney": "https://images.unsplash.com/photo-1514517604298-cf80e0fb7f1e?auto=format&fit=crop&q=80&w=400",
+      "google": "https://images.unsplash.com/photo-1572490122747-3968b75bf699?auto=format&fit=crop&q=80&w=400"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build a dual-pane demo (Split Screen: Left Parent, Right Child in phone frame) so grant reviewers can see the real-time interaction simultaneously.",
+    "Implement WebSocket or React Context to share state instantly: when Kid buys 'Apple Candy', Parent sees pending approval; when Parent approves, Kid gets confetti.",
+    "Parent View: Use Shadcn components extensively but restyle them to fit the dark Jewel/Swiss theme. STRICTLY no 'Inter' font.",
+    "Child View: Build custom CSS/Tailwind components. Make buttons 'chunky' with bottom box-shadows that compress on :active to mimic physical game buttons.",
+    "Integrate 'react-confetti' for the kid's buy celebration.",
+    "Implement an AI Story block that appears in the Kid view after buying, explaining the stock in 6-year-old language (e.g., 'Apple is building new magic phones!').",
+    "Add 'data-testid' to EVERY button, input, and interactive card."
+  ]
+}
